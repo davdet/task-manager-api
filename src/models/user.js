@@ -1,8 +1,9 @@
 const mongoose=require('mongoose')
 const validator=require('validator')
+const bcryptjs=require('bcryptjs')
 
-//Definizione del modello 'User'
-const User=mongoose.model('User', {
+//Creazione dello schema per l'oggetto User, in maniera tale da poter utilizzare il middleware per l'hashing della password
+const userSchema=new mongoose.Schema({
     name:{
         type: String,
         required: true,
@@ -43,6 +44,24 @@ const User=mongoose.model('User', {
         }
     }
 })
+
+//Impostazione del middleware per l'hashing della password: si usa il metodo .pre per controllare ciò che avviene prima del salvataggio di un nuovo utente
+userSchema.pre('save', async function(next){
+    user=this
+
+    //.isModified controlla che una proprietà sia stata modificata
+    if(user.isModified('password')){
+        //brcypts.js esegue l'hashing della password: il primo argomento è la password, il secondo il numero di volte che si vuole far girare l'algoritmo
+        user.password=await bcryptjs.hash(user.password, 8)
+        console.log('Password updated.')
+    }
+
+    //next() viene chiamato per dire avvertire che il middleware ha terminato il suo corso.
+    next()
+})
+
+//Definizione del modello 'User'
+const User=mongoose.model('User', userSchema)
 
 // //Creazione di una variabile che usa il modello 'User'
 // const me=new User({

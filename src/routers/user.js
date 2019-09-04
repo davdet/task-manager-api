@@ -106,8 +106,18 @@ router.patch('/users/:id', async(req, res)=>{
     }
 
     try{
-        //Primo argomento: id; secondo argomento: proprietà da modificare; terzo argomento: opzioni
-        const user=await User.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true})
+        const user=await User.findById(req.params.id)
+
+        //.forEach esegue una callback per ogni singolo elemento dell'array
+        updates.forEach((update)=>{
+            //Le parentesi quadre servono per accedere dinamicamente ad una proprietà
+            user[update]=req.body[update]
+        })
+        //Si attende che il middleware per il salvataggio impostato all'interno di ../models/user.js compia l'hashing della password (nel caso sia stata modificata la password)
+        await user.save()
+
+        //Primo argomento: id; secondo argomento: proprietà da modificare; terzo argomento: opzioni. Questa procedura non va bene nel caso si volesse utilizzare un middleware (come quello per l'hashing della password) perché ne farebbe l'override
+        // const user=await User.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true})
 
         if(!user){
             return res.status(404).send()
