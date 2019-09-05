@@ -1,15 +1,15 @@
-const express=require('express')
+const express = require('express')
 //Non è necessario creare una variabile perché non verrà estratto nulla da mongoose.js: è necessario solo che mongoose.js venga aperto per connettere mongoose al db.
 require('./db/mongoose.js')
 //Importazione del router per le CRUD sulle risorse di tipo User
-const userRouter=require('./routers/user.js')
+const userRouter = require('./routers/user.js')
 //Importazione del router per le CRUD sulle risorse di tipo Task
-const taskRouter=require('./routers/task.js')
+const taskRouter = require('./routers/task.js')
 
 //Creazione applicazione express
-const app=express()
+const app = express()
 //Definizione della porta
-const port=process.env.PORT || 3000
+const port = process.env.PORT || 3000
 
 //Parsing automatico dei dati JSON
 app.use(express.json())
@@ -18,6 +18,6 @@ app.use(userRouter)
 app.use(taskRouter)
 
 //Inizializzazione del server
-app.listen(port, ()=>{
+app.listen(port, () => {
     console.log('Server is up on port ' + port + '.')
 })
