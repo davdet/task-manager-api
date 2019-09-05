@@ -5,9 +5,9 @@ const router=new express.Router()
 
 
 
-/********************************/
-/************ CREATE ************/
-/********************************/
+/**********************************/
+/************ [C]REATE ************/
+/**********************************/
 
 //Endpoint /users: richiesta di POST (creazione di una risorsa di tipo User)
 router.post('/users', async(req, res)=>{
@@ -17,7 +17,9 @@ router.post('/users', async(req, res)=>{
     //Salvataggio di un utente
     try{
         await user.save()
-        res.status(201).send(user)
+        //Generazione del token
+        const token=user.generateAuthToken()
+        res.status(201).send({user, token})
     //Se il salvataggio non va a buon fine viene restituito un errore
     }catch(e){
         res.status(400).send(e)
@@ -36,9 +38,9 @@ router.post('/users', async(req, res)=>{
 })
 
 
-/******************************/
-/************ READ ************/
-/******************************/
+/********************************/
+/************ [R]EAD ************/
+/********************************/
 
 //Endpoint /users: richiesta di GET (lettura di tutte le risorse di tipo User)
 router.get('/users', async(req, res)=>{
@@ -86,9 +88,9 @@ router.get('/users/:id', async(req, res)=>{
 })
 
 
-/********************************/
-/************ UPDATE ************/
-/********************************/
+/**********************************/
+/************ [U]PDATE ************/
+/**********************************/
 
 //Endpoint /users: richiesta di PATCH (update di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
 router.patch('/users/:id', async(req, res)=>{
@@ -130,9 +132,9 @@ router.patch('/users/:id', async(req, res)=>{
 })
 
 
-/********************************/
-/************ DELETE ************/
-/********************************/
+/**********************************/
+/************ [D]ELETE ************/
+/**********************************/
 
 //Endpoint /users: richiesta di DELETE (rimozione di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
 router.delete('/users/:id', async(req, res)=>{
@@ -146,6 +148,23 @@ router.delete('/users/:id', async(req, res)=>{
         res.send(user)
     }catch(e){
         res.status(500).send()
+    }
+})
+
+
+/**********************************/
+/************ NON-CRUD ************/
+/**********************************/
+
+//Endpoint per il login
+router.post('/users/login', async(req,res)=>{
+    try{
+        const user=await User.findByCredentials(req.body.email, req.body.password)
+        const token=await user.generateAuthToken()
+        //Restituisce un oggetto con sia l'user che il token
+        res.send({user, token})
+    }catch(e){
+        res.status(400).send()
     }
 })
 
