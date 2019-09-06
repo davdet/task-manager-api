@@ -18,7 +18,7 @@ router.post('/users', async (req, res) => {
     try {
         await user.save()
         //Generazione del token
-        const token = user.generateAuthToken()
+        const token = await user.generateAuthToken()
         res.status(201).send({ user, token })
         //Se il salvataggio non va a buon fine viene restituito un errore
     } catch (e) {
