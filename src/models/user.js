@@ -4,7 +4,7 @@ const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const Task = require('./task.js')
 
-//Creazione dello schema per l'oggetto User, in maniera tale da poter utilizzare il middleware per l'hashing della password
+//Creazione esplicita dello schema per l'oggetto User, in maniera tale da poter utilizzare i middleware
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -53,6 +53,8 @@ const userSchema = new mongoose.Schema({
             require: true
         }
     }]
+}, {
+    timestamps: true
 })
 
 //Creazione di una proprietà virtuale per collegare un utente alle proprie task. Una proprietà virtuale non è un dato contenuto nel database ma una relazione tra due entità

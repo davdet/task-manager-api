@@ -1,7 +1,6 @@
 const mongoose = require('mongoose')
 
-//Definizione del modello 'Task'
-const Task = mongoose.model('Task', {
+const taskSchema = new mongoose.Schema({
     description: {
         type: String,
         required: true,
@@ -18,7 +17,16 @@ const Task = mongoose.model('Task', {
         //Crea una relazione tra questo campo e un altro modello (User)
         ref: 'User'
     }
+}, {
+    timestamps: true
 })
+
+
+/*----------------------------------------------------------------------------------------------------------------------------*/
+
+
+//Definizione del modello 'Task'
+const Task = mongoose.model('Task', taskSchema)
 
 // //Creazione di una variabile che usa il modello 'Tasks'
 // const task=new Task({
@@ -32,5 +40,9 @@ const Task = mongoose.model('Task', {
 // }).catch((error)=>{
 //     console.log('Error!', error)
 // })
+
+
+/*----------------------------------------------------------------------------------------------------------------------------*/
+
 
 module.exports = Task
