@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const Task = require('./task.js')
 
 //Creazione dello schema per l'oggetto User, in maniera tale da poter utilizzare il middleware per l'hashing della password
 const userSchema = new mongoose.Schema({
@@ -54,12 +55,21 @@ const userSchema = new mongoose.Schema({
     }]
 })
 
+//Creazione di una proprietà virtuale per collegare un utente alle proprie task. Una proprietà virtuale non è un dato contenuto nel database ma una relazione tra due entità
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    //Nome del campo che stabilisce la relazione in questo modello
+    localField: '_id',
+    //Nome del campo con il quale si vuole stabilire la relazione nell'altro modello
+    foreignField: 'owner'
+})
+
 //NB: LA DIFFERENZA TRA .methods E .statics È CHE I PRIMI SONO ACCESSIBILI DALLE ISTANZE, MENTRE I SECONDI DAI MODELLI
 
 //Impostazione di un nuovo metodo per la generazione di un token per un utente specifico
 userSchema.methods.generateAuthToken = async function () {
     const user = this
-    //Generazione del token. Primo argomento: payload; secondo argomento: secret
+    //Generazione del token. Primo argomento: payload (informazioni contenute nel token); secondo argomento: secret per validare il token
     const token = jwt.sign({ _id: user._id.toString() }, 'thisismynewcourse')
 
     //Salvataggio del token nell'array dei token di un utente
@@ -67,6 +77,20 @@ userSchema.methods.generateAuthToken = async function () {
     await user.save()
 
     return token
+}
+
+//Quando un documento viene passato a res.send, moongoose converte l'oggetto in un JSON. Il metodo .toJSON è utile per customizzare questo oggetto in maniera tale da poterne modificare alcune delle proprietà (in questo caso vengono oscurate la password e l'array dei token)
+userSchema.methods.toJSON = function () {
+    const user = this
+    //.toObject() è un metodo che mongoose mette a disposizione per restituire un oggetto raw da poter modificare
+    const userObject = user.toObject()
+
+    //Eliminazione del campo password
+    delete userObject.password
+    //Eliminazione dell'array dei token
+    delete userObject.tokens
+
+    return userObject
 }
 
 //Impostazione di un nuovo metodo per la ricerca di un utente in fase di login
@@ -98,9 +122,20 @@ userSchema.pre('save', async function (next) {
         user.password = await bcryptjs.hash(user.password, 8)
     }
 
-    //next() viene chiamato per avvertire che il middleware ha terminato il suo corso.
+    //next() viene chiamato per avvertire che il middleware ha terminato il suo corso
     next()
 })
+
+//Impostazione del middleware per rimuovere tutte le tasks associate ad un utente che elimina il suo profilo
+userSchema.pre('remove', async function (next) {
+    const user = this
+    await Task.deleteMany({ owner: user._id })
+    next()
+})
+
+
+/*----------------------------------------------------------------------------------------------------------------------------*/
+
 
 //Definizione del modello 'User'
 const User = mongoose.model('User', userSchema)

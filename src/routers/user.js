@@ -1,5 +1,6 @@
 const express = require('express')
 const User = require('../models/user.js')
+const auth = require('../middleware/auth.js')
 //Creazione di un nuovo router
 const router = new express.Router()
 
@@ -24,17 +25,6 @@ router.post('/users', async (req, res) => {
     } catch (e) {
         res.status(400).send(e)
     }
-
-    //Equivalente a quanto sopra ma senza async/await
-    // user.save().then(()=>{
-    //     res.status(201).send(user)
-    // }).catch((e)=>{
-    //     //Cambia lo stato in 400: BAD REQUEST e manda l'errore al client
-    //     res.status(400).send(e)
-    //     //Versione estesa del comando precedente
-    //     // res.status(400)
-    //     // res.send(e)
-    // })
 })
 
 
@@ -42,58 +32,46 @@ router.post('/users', async (req, res) => {
 /************ [R]EAD ************/
 /********************************/
 
-//Endpoint /users: richiesta di GET (lettura di tutte le risorse di tipo User)
-router.get('/users', async (req, res) => {
-    try {
-        const users = await User.find({})
-        res.send(users)
-    } catch (e) {
-        res.status(500).send()
-    }
-
-    //Equivalente a quanto sopra ma senza async/await
-    // User.find({}).then((users)=>{
-    //     res.send(users)
-    // }).catch((e)=>{
-    //     res.status(500).send()
-    // })
+//Endpoint /users/me: richiesta di GET (lettura della risorsa User appartenente all'utente loggato)
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user)
 })
 
-//Endpoint /users: richiesta di GET (lettura di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
-router.get('/users/:id', async (req, res) => {
-    const _id = req.params.id
+// //Endpoint /users: richiesta di GET (lettura di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
+// router.get('/users/:id', async (req, res) => {
+//     const _id = req.params.id
 
-    try {
-        const user = await User.findById(_id)
+//     try {
+//         const user = await User.findById(_id)
 
-        if (!user) {
-            return res.status(404).send()
-        }
+//         if (!user) {
+//             return res.status(404).send()
+//         }
 
-        res.send(user)
-    } catch (e) {
-        res.send(500).send()
-    }
+//         res.send(user)
+//     } catch (e) {
+//         res.send(500).send()
+//     }
 
-    //Equivalente a quanto sopra ma senza async/await
-    // User.findById(_id).then((user)=>{
-    //     if(!user){
-    //         return res.status(404).send()
-    //     }
+//     //Equivalente a quanto sopra ma senza async/await
+//     // User.findById(_id).then((user)=>{
+//     //     if(!user){
+//     //         return res.status(404).send()
+//     //     }
 
-    //     res.send(user)
-    // }).catch((e)=>{
-    //     res.status(500).send()
-    // })
-})
+//     //     res.send(user)
+//     // }).catch((e)=>{
+//     //     res.status(500).send()
+//     // })
+// })
 
 
 /**********************************/
 /************ [U]PDATE ************/
 /**********************************/
 
-//Endpoint /users: richiesta di PATCH (update di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
-router.patch('/users/:id', async (req, res) => {
+//Endpoint /users: richiesta di PATCH (update di una specifica risorsa di tipo User).
+router.patch('/users/me', auth, async (req, res) => {
     //Restituisce un array con le chiavi di tutte le proprietà in req.body
     const updates = Object.keys(req.body)
     //Array statico che contiene le chiavi delle proprietà che possono essere modificate
@@ -108,24 +86,15 @@ router.patch('/users/:id', async (req, res) => {
     }
 
     try {
-        const user = await User.findById(req.params.id)
-
         //.forEach esegue una callback per ogni singolo elemento dell'array
         updates.forEach((update) => {
             //Le parentesi quadre servono per accedere dinamicamente ad una proprietà
-            user[update] = req.body[update]
+            req.user[update] = req.body[update]
         })
         //Si attende che il middleware per il salvataggio impostato all'interno di ../models/user.js compia l'hashing della password (nel caso sia stata modificata la password)
-        await user.save()
+        await req.user.save()
 
-        //Primo argomento: id; secondo argomento: proprietà da modificare; terzo argomento: opzioni. Questa procedura non va bene nel caso si volesse utilizzare un middleware (come quello per l'hashing della password) perché ne farebbe l'override
-        // const user=await User.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true})
-
-        if (!user) {
-            return res.status(404).send()
-        }
-
-        res.send(user)
+        res.send(req.user)
     } catch (e) {
         res.status(400).send(e)
     }
@@ -136,16 +105,11 @@ router.patch('/users/:id', async (req, res) => {
 /************ [D]ELETE ************/
 /**********************************/
 
-//Endpoint /users: richiesta di DELETE (rimozione di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
-router.delete('/users/:id', async (req, res) => {
+//Endpoint /users: richiesta di DELETE (rimozione di una specifica risorsa di tipo User).
+router.delete('/users/me', auth, async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id)
-
-        if (!user) {
-            return res.status(404).send()
-        }
-
-        res.send(user)
+        await req.user.remove()
+        res.send(req.user)
     } catch (e) {
         res.status(500).send()
     }
@@ -165,6 +129,33 @@ router.post('/users/login', async (req, res) => {
         res.send({ user, token })
     } catch (e) {
         res.status(400).send()
+    }
+})
+
+//Endpoint per il logout (chiusura di una sessione)
+router.post('/users/logout', auth, async (req, res) => {
+    try {
+        //L'array dei token viene filtrato fino a trovare il token corrispondente a quello dell'attuale login
+        req.user.tokens = req.user.tokens.filter((token) => {
+            //Il metodo .filter scansiona l'array dei token. Se l'elemento scansionato è diverso da quello ricercato, la callback restituisce true e continua la scansione dell'array, se invece è uguale restituisce false ed elimina l'elemento dall'array. La dicitura token.token serve perché il token è un oggetto che al suo interno ha un id e il token stesso
+            return token.token !== req.token
+        })
+        await req.user.save()
+
+        res.send()
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+//Endpoint per il logout (chiusura di tutte le sessioni di un utente)
+router.post('/users/logoutAll', auth, async (req, res) => {
+    try {
+        req.user.tokens = []
+        await req.user.save()
+        res.send()
+    } catch (e) {
+        res.status(500).send()
     }
 })
 

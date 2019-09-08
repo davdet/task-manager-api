@@ -10,6 +10,13 @@ const Task = mongoose.model('Task', {
     completed: {
         type: Boolean,
         default: false
+    },
+    owner: {
+        //Il tipo è un ObjectId di Mongoose
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        //Crea una relazione tra questo campo e un altro modello (User)
+        ref: 'User'
     }
 })
 
