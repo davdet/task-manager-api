@@ -1,4 +1,5 @@
 const express = require('express')
+const multer = require('multer')
 const User = require('../models/user.js')
 const auth = require('../middleware/auth.js')
 //Creazione di un nuovo router
@@ -157,6 +158,30 @@ router.post('/users/logoutAll', auth, async (req, res) => {
     } catch (e) {
         res.status(500).send()
     }
+})
+
+//Endpoint per l'upload di un avatar
+//Creazione di un oggetto per l'upload dei dati
+const upload = multer({
+    dest: 'avatars',
+    limits: {
+        //Massima dimensione consentita per l'upload (in byte)
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        //Il controllo dell'estensione del file viene fatto con una regex (maggiori informazioni su https://regex101.com)
+        if(!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+            return cb(new Error('Please upload an image (jpg, jpg, png).', undefined))
+        }
+
+        cb(undefined, true)
+    }
+})
+
+router.post('/users/me/avatar', upload.single('avatar'), (req, res) => {
+    res.send()
+}, (error, req, res, next) => { /*<-- Callback per il controllo di eventuali errori durante la procedura di upload.*/
+    res.status(400).send({ error: error.message })
 })
 
 
