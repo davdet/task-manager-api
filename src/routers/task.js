@@ -4,11 +4,6 @@ const Task = require('../models/task.js')
 const router = new express.Router()
 
 
-
-/********************************/
-/************ CREATE ************/
-/********************************/
-
 //Endpoint /tasks: richiesta di POST (creazione di una risorsa di tipo Task)
 router.post('/tasks', auth, async (req, res) => {
     const task = new Task({
@@ -25,11 +20,6 @@ router.post('/tasks', auth, async (req, res) => {
         res.status(400).send(e)
     }
 })
-
-
-/******************************/
-/************ READ ************/
-/******************************/
 
 //Endpoint /tasks: richiesta di GET (lettura di tutte le risorse di tipo Task di un utente in base a diversi criteri di ricerca)
 //GET /task?completed=true          task complete o incomplete
@@ -78,7 +68,7 @@ router.get('/tasks', auth, async (req, res) => {
     }
 })
 
-//Endpoint /tasks: richiesta di GET (lettura di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
+//Endpoint /tasks/:id: richiesta di GET (lettura di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
 router.get('/tasks/:id', auth, async (req, res) => {
     const _id = req.params.id
 
@@ -96,12 +86,7 @@ router.get('/tasks/:id', auth, async (req, res) => {
     }
 })
 
-
-/********************************/
-/************ UPDATE ************/
-/********************************/
-
-//Endpoint /tasks: richiesta di PATCH (update di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
+//Endpoint /tasks/:id: richiesta di PATCH (update di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
 router.patch('/tasks/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body)
     const allowedUpdates = ['description', 'completed']
@@ -126,12 +111,7 @@ router.patch('/tasks/:id', auth, async (req, res) => {
     }
 })
 
-
-/********************************/
-/************ DELETE ************/
-/********************************/
-
-//Endpoint /tasks: richiesta di DELETE (rimozione di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
+//Endpoint /tasks/:id: richiesta di DELETE (rimozione di una specifica risorsa di tipo Task). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
 router.delete('/tasks/:id', auth, async (req, res) => {
     try {
         const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id })

@@ -11,41 +11,6 @@ const app = express()
 //Definizione della porta
 const port = process.env.PORT || 3000
 
-
-
-
-const multer = require('multer')
-const upload = multer({
-    dest: 'images',
-    limits: {
-        //Limite del file da uploadare in byte
-        fileSize: 1000000
-    },
-    fileFilter(req, file, cb) {
-        if (!file.originalname.match(/\.(doc|docx)$/)) {
-            return cb(new Error('Please upload a Word document'), undefined)
-        }
-
-        cb(undefined, true)
-        // cb(new Error('File must be a PDF'), undefined)
-        // cb(undefined, true)
-        // cb(undefined, false)
-    }
-})
-
-const errorMiddleware = (req, res, next) => {
-    throw new Error('From my middleware')
-}
-
-app.post('/upload', upload.single('upload'), (req, res) => {
-    res.send()
-}, (error, req, res, next) => {
-    res.status(400).send({ error: error.message })
-})
-
-
-
-
 //Parsing automatico dei dati JSON
 app.use(express.json())
 //Utilizzo dei router

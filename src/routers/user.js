@@ -1,15 +1,11 @@
 const express = require('express')
 const multer = require('multer')
+const sharp = require('sharp')
 const User = require('../models/user.js')
 const auth = require('../middleware/auth.js')
 //Creazione di un nuovo router
 const router = new express.Router()
 
-
-
-/**********************************/
-/************ [C]REATE ************/
-/**********************************/
 
 //Endpoint /users: richiesta di POST (creazione di una risorsa di tipo User)
 router.post('/users', async (req, res) => {
@@ -28,50 +24,51 @@ router.post('/users', async (req, res) => {
     }
 })
 
+//Endpoint /users/login: richiesta di POST (login di un utente)
+router.post('/users/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        const token = await user.generateAuthToken()
+        //Restituisce un oggetto con sia l'user che il token
+        res.send({ user, token })
+    } catch (e) {
+        res.status(400).send()
+    }
+})
 
-/********************************/
-/************ [R]EAD ************/
-/********************************/
+//Endpoint /users/logout: richiesta di POST (logout di una sessione di un utente)
+router.post('/users/logout', auth, async (req, res) => {
+    try {
+        //L'array dei token viene filtrato fino a trovare il token corrispondente a quello dell'attuale login
+        req.user.tokens = req.user.tokens.filter((token) => {
+            //Il metodo .filter scansiona l'array dei token. Se l'elemento scansionato è diverso da quello ricercato, la callback restituisce true e continua la scansione dell'array, se invece è uguale restituisce false ed elimina l'elemento dall'array. La dicitura token.token serve perché il token è un oggetto che al suo interno ha un id e il token stesso
+            return token.token !== req.token
+        })
+        await req.user.save()
 
-//Endpoint /users/me: richiesta di GET (lettura della risorsa User appartenente all'utente loggato)
+        res.send()
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+//Endpoint /users/logoutAll: richiesta di POST (logout di tutte le sessioni di un utente)
+router.post('/users/logoutAll', auth, async (req, res) => {
+    try {
+        req.user.tokens = []
+        await req.user.save()
+        res.send()
+    } catch (e) {
+        res.status(500).send()
+    }
+})
+
+//Endpoint /users/me: richiesta di GET (lettura del profilo dell'utente loggato)
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
 })
 
-// //Endpoint /users: richiesta di GET (lettura di una specifica risorsa di tipo User). :id fa riferimento a qualcosa di dinamico a cui si accede tramite la proprietà params di req
-// router.get('/users/:id', async (req, res) => {
-//     const _id = req.params.id
-
-//     try {
-//         const user = await User.findById(_id)
-
-//         if (!user) {
-//             return res.status(404).send()
-//         }
-
-//         res.send(user)
-//     } catch (e) {
-//         res.send(500).send()
-//     }
-
-//     //Equivalente a quanto sopra ma senza async/await
-//     // User.findById(_id).then((user)=>{
-//     //     if(!user){
-//     //         return res.status(404).send()
-//     //     }
-
-//     //     res.send(user)
-//     // }).catch((e)=>{
-//     //     res.status(500).send()
-//     // })
-// })
-
-
-/**********************************/
-/************ [U]PDATE ************/
-/**********************************/
-
-//Endpoint /users: richiesta di PATCH (update di una specifica risorsa di tipo User).
+//Endpoint /users/me: richiesta di PATCH (update di una specifica risorsa di tipo User).
 router.patch('/users/me', auth, async (req, res) => {
     //Restituisce un array con le chiavi di tutte le proprietà in req.body
     const updates = Object.keys(req.body)
@@ -101,12 +98,7 @@ router.patch('/users/me', auth, async (req, res) => {
     }
 })
 
-
-/**********************************/
-/************ [D]ELETE ************/
-/**********************************/
-
-//Endpoint /users: richiesta di DELETE (rimozione di una specifica risorsa di tipo User).
+//Endpoint /users/me: richiesta di DELETE (eliminazione del profilo di un utente).
 router.delete('/users/me', auth, async (req, res) => {
     try {
         await req.user.remove()
@@ -116,54 +108,8 @@ router.delete('/users/me', auth, async (req, res) => {
     }
 })
 
-
-/**********************************/
-/************ NON-CRUD ************/
-/**********************************/
-
-//Endpoint per il login
-router.post('/users/login', async (req, res) => {
-    try {
-        const user = await User.findByCredentials(req.body.email, req.body.password)
-        const token = await user.generateAuthToken()
-        //Restituisce un oggetto con sia l'user che il token
-        res.send({ user, token })
-    } catch (e) {
-        res.status(400).send()
-    }
-})
-
-//Endpoint per il logout (chiusura di una sessione)
-router.post('/users/logout', auth, async (req, res) => {
-    try {
-        //L'array dei token viene filtrato fino a trovare il token corrispondente a quello dell'attuale login
-        req.user.tokens = req.user.tokens.filter((token) => {
-            //Il metodo .filter scansiona l'array dei token. Se l'elemento scansionato è diverso da quello ricercato, la callback restituisce true e continua la scansione dell'array, se invece è uguale restituisce false ed elimina l'elemento dall'array. La dicitura token.token serve perché il token è un oggetto che al suo interno ha un id e il token stesso
-            return token.token !== req.token
-        })
-        await req.user.save()
-
-        res.send()
-    } catch (e) {
-        res.status(500).send()
-    }
-})
-
-//Endpoint per il logout (chiusura di tutte le sessioni di un utente)
-router.post('/users/logoutAll', auth, async (req, res) => {
-    try {
-        req.user.tokens = []
-        await req.user.save()
-        res.send()
-    } catch (e) {
-        res.status(500).send()
-    }
-})
-
-//Endpoint per l'upload di un avatar
 //Creazione di un oggetto per l'upload dei dati
 const upload = multer({
-    dest: 'avatars',
     limits: {
         //Massima dimensione consentita per l'upload (in byte)
         fileSize: 1000000
@@ -178,10 +124,40 @@ const upload = multer({
     }
 })
 
-router.post('/users/me/avatar', upload.single('avatar'), (req, res) => {
+//Endpoint /users/me/avatar: richiesta di POST (upload dell'avatar di un utente)
+router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+    //req.file.buffer contiene i dati binari dell'immagine che vengono passati da upload.single. Questi dati vengono passati a Sharp che tramite .resize effettua il resize dell'immagine, e tramite .png la converte in formato png. Infine con il metodo .toBuffer viene restituito un buffer di dati binari dell'immagine modificata
+    const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
+    //L'immagine così modificata viene salvata nel campo avatar del modello user
+    req.user.avatar = buffer
+    await req.user.save()
     res.send()
-}, (error, req, res, next) => { /*<-- Callback per il controllo di eventuali errori durante la procedura di upload.*/
+}, (error, req, res, next) => { // <-- Callback per il controllo di eventuali errori durante la procedura di upload.
     res.status(400).send({ error: error.message })
+})
+
+//Endpoint /users/me/avatar: richiesta di DELETE (rimozione dell'avatar di un utente)
+router.delete('/users/me/avatar', auth, async (req, res) => {
+    req.user.avatar = undefined
+    await req.user.save()
+    res.send()
+})
+
+//Endpoint /users/:id/avatar: richiesta di GET (lettura dell'avatar di un utente)
+router.get('/users/:id/avatar', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+
+        if (!user || !user.avatar) {
+            throw new Error()
+        }
+
+        //Fornisce all'header del requester HTTP informazioni sul tipo di dati sta ricevendo
+        res.set('Content-Type', 'image/png')
+        res.send(user.avatar)
+    } catch (e) {
+        res.status(404).send()
+    }
 })
 
 

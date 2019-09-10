@@ -52,7 +52,11 @@ const userSchema = new mongoose.Schema({
             type: String,
             require: true
         }
-    }]
+    }],
+    avatar: {
+        //Permette di memorizzare il buffer con i dati binari dell'immagine. Per renderizzare questo buffer nel browser si può utilizzare il seguente codice: <img src="data:image.jpg;base64,BINARY_DATA_HERE">
+        type: Buffer
+    }
 }, {
     timestamps: true
 })
@@ -91,6 +95,8 @@ userSchema.methods.toJSON = function () {
     delete userObject.password
     //Eliminazione dell'array dei token
     delete userObject.tokens
+    //Eliminazione dell'avatar
+    delete userObject.avatar
 
     return userObject
 }
