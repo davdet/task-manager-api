@@ -3,6 +3,8 @@ const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user.js')
 const auth = require('../middleware/auth.js')
+//Destrutturazione ES6: preleva solamente sendWelcomeEmail dall'oggetto restituito da account.js
+const { sendWelcomeEmail, sendCancellationEmail } = require('../emails/account.js')
 //Creazione di un nuovo router
 const router = new express.Router()
 
@@ -15,6 +17,7 @@ router.post('/users', async (req, res) => {
     //Salvataggio di un utente
     try {
         await user.save()
+        sendWelcomeEmail(user.email, user.name)
         //Generazione del token
         const token = await user.generateAuthToken()
         res.status(201).send({ user, token })
@@ -102,6 +105,7 @@ router.patch('/users/me', auth, async (req, res) => {
 router.delete('/users/me', auth, async (req, res) => {
     try {
         await req.user.remove()
+        sendCancellationEmail(req.user.email, req.user.name)
         res.send(req.user)
     } catch (e) {
         res.status(500).send()

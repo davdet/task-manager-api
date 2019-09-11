@@ -8,8 +8,8 @@ const taskRouter = require('./routers/task.js')
 
 //Creazione applicazione express
 const app = express()
-//Definizione della porta
-const port = process.env.PORT || 3000
+//Definizione della porta tramite una variabile d'ambiente
+const port = process.env.PORT
 
 //Parsing automatico dei dati JSON
 app.use(express.json())

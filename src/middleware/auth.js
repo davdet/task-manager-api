@@ -6,7 +6,7 @@ const auth = async (req, res, next) => {
         //Estrazione del token dall'header della richiesta. Il metodo .replace sostituisce una stringa con un'altra
         const token = req.header('Authorization').replace('Bearer ', '')
         //Decodifica e verifica che il token sia effettivamente valido e non scaduto
-        const decoded = jwt.verify(token, 'thisismynewcourse')
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
         //Ricerca dell'utente nel database tramite l'associazione del token appena letto. L'argomento di .findOne è il criterio di ricerca: la prima proprietà dell'oggetto è l'id dell'utente presente nel token, la seconda proprietà dell'oggetto verifica che il token decodificato sia effettivamente presente nell'array dei token dell'utente con quell'id
         const user = await User.findOne({ _id: decoded._id, 'tokens.token': token })
 
