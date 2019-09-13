@@ -1,28 +1,7 @@
 const request = require('supertest')
-const jwt = require('jsonwebtoken')
-const mongoose = require('mongoose')
 const app = require('../src/app.js')
 const User = require('../src/models/user.js')
-
-
-/*----------------------------------------------------------------------------------------------------------------------------*/
-
-
-//DEFINIZIONE DI UN UTENTE DA UTILIZZARE NEI TEST CHE RICHIEDONO LA PRESENZA DI UN UTENTE NEL DB
-
-//Creazione di un ID tramite Mongoose da assegnare all'utente
-const userOneId = new mongoose.Types.ObjectId()
-
-const userOne = {
-    _id: userOneId,
-    name: 'Monica',
-    email: 'mon@example.com',
-    password: '613so_WhaTH?!',
-    tokens: [{
-        //Creazione di un token di autenticazione tramite JWT
-        token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET)
-    }]
-}
+const { userOne, setupDatabase } = require('./fixtures/db.js')
 
 
 /*----------------------------------------------------------------------------------------------------------------------------*/
@@ -31,12 +10,7 @@ const userOne = {
 //DEFINIZIONE DELLE OPERAZIONI PRELIMINARI
 
 //Definizione delle operazioni da effettuare prima di ogni test
-beforeEach(async () => {
-    //Rimuove tutti gli utenti del db in maniera tale da poter eseguire il test di creazione dell'utente più volte, senza che fallisca a causa della presenza di dati uguali
-    await User.deleteMany()
-    //Salva userOne nel db
-    await new User(userOne).save()
-})
+beforeEach(setupDatabase)
 
 
 /*----------------------------------------------------------------------------------------------------------------------------*/
@@ -46,13 +20,16 @@ beforeEach(async () => {
 test('Should signup a new user', async () => {
     //Esegue una richiesta di POST all'app Express sull'endpoint /user (creazione di un utente)
     //La variabile response contiene il body della risposta
-    const response = await request(app).post('/users').send({
-        //Definisce i dati dell'utente di test da inserire
-        name: 'Dave',
-        email: 'dv@example.com',
-        password: 'MyPazz666#'
-    //Controlla che il codice HTTP restituito sia 201 (created)
-    }).expect(201)
+    const response = await request(app)
+        .post('/users')
+        .send({
+            //Definisce i dati dell'utente di test da inserire
+            name: 'Dave',
+            email: 'dv@example.com',
+            password: 'MyPazz666#'
+        })
+        //Controlla che il codice HTTP restituito sia 201 (created)
+        .expect(201)
 
     //Conferma che l'utente è stato inserito correttamente nel database andando a cercarlo tramite il suo ID
     const user = await User.findById(response.body.user._id)
@@ -73,10 +50,13 @@ test('Should signup a new user', async () => {
 
 //Test sul login di un utente (userOne)
 test('Should login existing user', async () => {
-    const response = await request(app).post('/users/login').send({
-        email: userOne.email,
-        password: userOne.password
-    }).expect(200)
+    const response = await request(app)
+        .post('/users/login')
+        .send({
+            email: userOne.email,
+            password: userOne.password
+        })
+        .expect(200)
 
     //Conferma che l'utente ha ricevuto un nuovo token di autorizzazione
     const user = await User.findById(userOne._id)
@@ -85,10 +65,13 @@ test('Should login existing user', async () => {
 
 //Test sul login di un utente
 test('Should not login nonexistent user', async () => {
-    await request(app).post('/users/login').send({
-        email: 'wrong@example.com',
-        password: 'noWAY!714'
-    }).expect(400)
+    await request(app)
+        .post('/users/login')
+        .send({
+            email: 'wrong@example.com',
+            password: 'noWAY!714'
+        })
+        .expect(400)
 })
 
 //Test sulla lettura del profilo di un utente loggato (userOne)
@@ -151,13 +134,13 @@ test('Should update valid user fields', async () => {
         .patch('/users/me')
         .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
         .send({
-            name: 'Jennifer'
+            name: 'Lucy'
         })
         .expect(200)
 
     //Conferma che il nome è stato cambiato
     const user = await User.findById(userOne._id)
-    expect(user.name).toEqual('Jennifer')
+    expect(user.name).toEqual('Lucy')
 })
 
 //Test sull'update di una proprietà non consentita

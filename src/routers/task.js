@@ -60,9 +60,6 @@ router.get('/tasks', auth, async (req, res) => {
             }
         }).execPopulate()
         res.send(req.user.tasks)
-        //Metodo alternativo alle due linee precedenti
-        // const tasks = await Task.find({ owner: req.user._id })
-        // res.send(tasks)
     } catch (e) {
         res.status(500).send()
     }
@@ -117,7 +114,7 @@ router.delete('/tasks/:id', auth, async (req, res) => {
         const task = await Task.findOneAndDelete({ _id: req.params.id, owner: req.user._id })
 
         if (!task) {
-            return res.status(400).send()
+            return res.status(404).send()
         }
 
         res.send(task)
