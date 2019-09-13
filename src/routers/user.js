@@ -3,7 +3,7 @@ const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user.js')
 const auth = require('../middleware/auth.js')
-//Destrutturazione ES6: preleva solamente sendWelcomeEmail dall'oggetto restituito da account.js
+//Destrutturazione ES6: preleva solamente sendWelcomeEmail e sendCancellationEmail dall'oggetto restituito da account.js
 const { sendWelcomeEmail, sendCancellationEmail } = require('../emails/account.js')
 //Creazione di un nuovo router
 const router = new express.Router()
@@ -116,7 +116,7 @@ router.delete('/users/me', auth, async (req, res) => {
 const upload = multer({
     limits: {
         //Massima dimensione consentita per l'upload (in byte)
-        fileSize: 1000000
+        fileSize: 1000000 //1MB
     },
     fileFilter(req, file, cb) {
         //Il controllo dell'estensione del file viene fatto con una regex (maggiori informazioni su https://regex101.com)
